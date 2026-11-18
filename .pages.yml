@@ -1,0 +1,11 @@
+
+media:
+  input: images
+  output: /images
+
+content:
+  - name: katalog
+    label: Katalog stripova
+    type: file
+    path: katalog.js
+    format: code
