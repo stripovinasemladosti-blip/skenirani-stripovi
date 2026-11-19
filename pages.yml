@@ -1,0 +1,82 @@
+media:
+  input: images
+  output: /images
+content:
+- name: stripovi
+  label: Katalog stripova (63 izdanja)
+  type: file
+  path: katalog.json
+  format: json
+  list: true
+  fields:
+  - name: id
+    label: ID izdanja
+    type: number
+  - name: title
+    label: Naziv stripa
+    type: string
+    required: true
+  - name: issue
+    label: Opis / broj izdanja
+    type: string
+  - name: price
+    label: Cena u USD
+    type: number
+    required: true
+    options:
+      min: 0
+  - name: genre
+    label: Kategorija
+    type: select
+    options:
+      values:
+      - Zagor
+      - Magazini
+      - Junaci
+      - Ostalo
+      - Dizni i dečji
+  - name: image
+    label: Link do naslovnice (eBay)
+    type: string
+  - name: fallback
+    label: Rezervna slika
+    type: string
+  - name: paypal
+    label: PayPal link (prazno = bez dugmeta)
+    type: string
+  - name: color
+    label: Boja rezervne kartice
+    type: select
+    options:
+      values:
+      - blue
+      - green
+      - gold
+      - purple
+      - teal
+      - red
+  - name: glyph
+    label: Simbol rezervne kartice
+    type: string
+  - name: ebay
+    label: eBay oglas (interno)
+    type: string
+- name: podesavanja
+  label: Podešavanja prodavnice
+  type: file
+  path: podesavanja.json
+  format: json
+  fields:
+  - name: email
+    label: Email adresa za narudžbine
+    type: string
+    required: true
+  - name: currency
+    label: Valuta
+    type: string
+    required: true
+    readonly: true
+  - name: storeName
+    label: Naziv prodavnice
+    type: string
+    required: true
