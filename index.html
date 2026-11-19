@@ -33,33 +33,52 @@
 <dialog id="dialog"><div class="modal"><button aria-label="Zatvori" class="x" id="close">×</button><h2 id="dialogTitle">Upit za kupovinu</h2><p>Upit je pripremljen. Možete ga kopirati ili otvoriti svoj program za elektronsku poštu.</p><div class="order-preview" id="preview"></div><div class="msg hidden" id="setupMsg">Adresa prodavca još nije podešena. Vlasnik sajta treba da upiše svoju adresu u podešavanje <b>SELLER_EMAIL</b> u HTML fajlu.</div><button class="btn" id="emailBtn" type="button">Otvori mejl sa upitom ↗</button> <button class="btn" id="copyBtn" style="background:#e7e0d4" type="button">Kopiraj upit</button><p aria-live="polite" class="meta" id="copyResult"></p></div></dialog>
 <script>
 async function pokreniProdavnicu(){
-try {
- const [r1,r2]=await Promise.all([fetch("katalog.json",{cache:"no-store"}),fetch("podesavanja.json",{cache:"no-store"})]);
- if(!r1.ok||!r2.ok) throw Error("Nedostaju podaci kataloga ili podešavanja");
- window.STORE_PRODUCTS=await r1.json();
- window.STORE_SETTINGS=await r2.json();
- const [homeResult, themeResult] = await Promise.all([fetch("pocetna.json",{cache:"no-store"}), fetch("izgled.json",{cache:"no-store"})]);
- if (!homeResult.ok || !themeResult.ok) throw Error("Nedostaju fajlovi pocetna.json ili izgled.json");
- const homeData = await homeResult.json();
- const themeData = await themeResult.json();
- document.querySelectorAll('[data-cms-text]').forEach(el => { const val = homeData[el.dataset.cmsText]; if (typeof val === 'string') el.textContent = val; });
- document.querySelectorAll('[data-cms-attr-placeholder]').forEach(el => { const val = homeData[el.dataset.cmsAttrPlaceholder]; if (typeof val === 'string') el.setAttribute('placeholder',val); });
- [['heroImage','.cms-hero-img'],['aboutImage','.cms-about-img']].forEach(([key,selector]) => {
-   const img = document.querySelector(selector), url = homeData[key];
-   if (img && typeof url === 'string' && (/^https:\/\//.test(url) || /^\/images\//.test(url))) {img.src = url;img.hidden=false;img.addEventListener('error',()=>{img.hidden=true},{once:true})}
- });
- const allowedColors=['paper','ink','sub','night','gold','rust','line'];
- allowedColors.forEach(k=>{const v=themeData[k];if(typeof v==='string' && /^#[0-9a-fA-F]{6}$/.test(v)){document.documentElement.style.setProperty('--'+k,v)}});
- if(window.STORE_SETTINGS.siteTitle) document.title=window.STORE_SETTINGS.siteTitle;
- if(window.STORE_SETTINGS.seoDescription) document.querySelector('meta[name="description"]').setAttribute('content',window.STORE_SETTINGS.seoDescription);
- document.querySelectorAll('[data-cms-logo]').forEach(el=> {el.textContent=window.STORE_SETTINGS.storeName || 'Skenirani stripovi'});
- if(window.STORE_SETTINGS.contactLabel) document.querySelector('#emailLink').textContent=window.STORE_SETTINGS.contactLabel;
- if(!Array.isArray(window.STORE_PRODUCTS)) throw Error("Katalog nije lista izdanja");
-} catch(error) {
- console.error("Katalog nije učitan:",error);
- document.querySelector("#catalog").innerHTML='<div class="empty">Katalog trenutno nije dostupan. Proverite da li su <code>katalog.json</code> i <code>podesavanja.json</code> objavljeni na sajtu.</div>';
- return;
-}
+  // Katalog je obavezan; ostali JSON fajlovi imaju rezervne vrednosti.
+  async function ucitajJSON(ime, obavezno=false) {
+    try {
+      const odgovor=await fetch('./'+ime,{cache:'no-store'});
+      if(!odgovor.ok) throw new Error('HTTP '+odgovor.status+' za '+ime);
+      return await odgovor.json();
+    } catch(greska) {
+      console.error('Greška u '+ime,greska);
+      if(obavezno) throw new Error(ime+': '+greska.message);
+      return null;
+    }
+  }
+  try {
+    window.STORE_PRODUCTS=await ucitajJSON('katalog.json',true);
+    if(!Array.isArray(window.STORE_PRODUCTS)) throw new Error('katalog.json mora da sadrži listu izdanja');
+  } catch(error) {
+    console.error('Katalog nije učitan:',error);
+    const poruka=document.createElement('div');
+    poruka.className='empty';
+    poruka.style.borderLeft='5px solid #ba553d';
+    poruka.innerHTML='<b>Katalog se nije učitao.</b><p>Proverite da li je <a href="./katalog.json" target="_blank" rel="noopener">katalog.json</a> dostupan na istoj Netlify adresi. Ako vidite 404, proverite poslednji Deploy na Netlify-u i Publish directory.</p>';
+    const detalj=document.createElement('code');
+    detalj.textContent=error.message;
+    poruka.appendChild(detalj);
+    document.querySelector('#catalog').replaceChildren(poruka);
+    return;
+  }
+  window.STORE_SETTINGS=await ucitajJSON('podesavanja.json') || {email:'stripovinasemladosti@gmail.com',currency:'USD',storeName:'Skenirani stripovi'};
+  const homeData=await ucitajJSON('pocetna.json') || {};
+  const themeData=await ucitajJSON('izgled.json') || {};
+  document.querySelectorAll('[data-cms-text]').forEach(el => { const val=homeData[el.dataset.cmsText]; if(typeof val==='string') el.textContent=val; });
+  document.querySelectorAll('[data-cms-attr-placeholder]').forEach(el => { const val=homeData[el.dataset.cmsAttrPlaceholder]; if(typeof val==='string') el.setAttribute('placeholder',val); });
+  [['heroImage','.cms-hero-img'],['aboutImage','.cms-about-img']].forEach(([key,selector])=>{
+    const img=document.querySelector(selector), url=homeData[key];
+    if(img && typeof url==='string' && (/^https:\/\//.test(url) || /^\/images\//.test(url))) {
+      img.src=url; img.hidden=false; img.addEventListener('error',()=>{img.hidden=true},{once:true});
+    }
+  });
+  ['paper','ink','sub','night','gold','rust','line'].forEach(k=>{
+    const v=themeData[k];
+    if(typeof v==='string' && /^#[0-9a-fA-F]{6}$/.test(v))document.documentElement.style.setProperty('--'+k,v);
+  });
+  if(window.STORE_SETTINGS.siteTitle)document.title=window.STORE_SETTINGS.siteTitle;
+  if(window.STORE_SETTINGS.seoDescription)document.querySelector('meta[name="description"]').setAttribute('content',window.STORE_SETTINGS.seoDescription);
+  document.querySelectorAll('[data-cms-logo]').forEach(el=>{el.textContent=window.STORE_SETTINGS.storeName||'Skenirani stripovi'});
+  if(window.STORE_SETTINGS.contactLabel)document.querySelector('#emailLink').textContent=window.STORE_SETTINGS.contactLabel;
 
 // PODESAVANJE: ovde upišite vašu PRAVU mejl adresu (npr. prodaja@vasdomen.rs).
 // Dok je vrednost prazna, korisnici mogu da kopiraju upit, ali slanje mejla nije aktivno.
