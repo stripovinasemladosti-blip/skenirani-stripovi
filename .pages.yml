@@ -1,0 +1,29 @@
+
+media:
+  input: images
+  output: /images
+
+content:
+  - name: katalog
+    label: Katalog stripova
+    type: file
+    path: katalog.json
+    format: json
+
+  - name: pocetna
+    label: Pocetna stranica
+    type: file
+    path: pocetna.json
+    format: json
+
+  - name: izgled
+    label: Izgled sajta
+    type: file
+    path: izgled.json
+    format: json
+
+  - name: podesavanja
+    label: Podesavanja prodavnice
+    type: file
+    path: podesavanja.json
+    format: json
